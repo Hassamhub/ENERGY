@@ -399,10 +399,10 @@ async def get_device_status(device_id: int, current_user: Dict = Depends(get_cur
         readings = db_helper.execute_query(readings_query, (device_id,))
         reading_count = readings[0]["ReadingCount"] if readings else 0
 
-        # Determine last_seen based on latest DeviceHistory entry (Kepware ingestion)
+        # Determine last_seen based on latest reading from Kepware ingestion
         hist_rows = db_helper.execute_query(
             """
-            SELECT TOP 1 Timestamp FROM app.DeviceHistory WHERE AnalyzerID = ? ORDER BY Timestamp DESC
+            SELECT TOP 1 Timestamp FROM app.Readings WHERE AnalyzerID = ? ORDER BY Timestamp DESC
             """,
             (device_id,)
         )
@@ -415,13 +415,12 @@ async def get_device_status(device_id: int, current_user: Dict = Depends(get_cur
                 poll_interval = int(cfg[0]["ConfigValue"]) or 60
         except Exception:
             pass
-        offline_threshold = max(poll_interval * 3, 60)
-        warn_threshold = max(poll_interval, 60)
+        # Fixed thresholds per requirements: ONLINE (0–30s), WARNING (30–120s), OFFLINE (>120s)
         if last_seen:
             seconds = (current_time - last_seen).total_seconds()
-            if seconds < warn_threshold:
+            if seconds <= 30:
                 status = "Online"
-            elif seconds < offline_threshold:
+            elif seconds <= 120:
                 status = "Warning"
             else:
                 status = "Offline"

@@ -164,7 +164,7 @@ async def admin_websocket(websocket: WebSocket, user_id: int = None):
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "version": "1.0.0", "service": "PAC3220-API"}
+    return {"status": "ok"}
 
 # Root endpoint
 @app.get("/")
