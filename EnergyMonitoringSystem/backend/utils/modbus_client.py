@@ -362,3 +362,30 @@ class ModbusClient:
             return None
         except (ModbusException, ConnectionException, Exception):
             return None
+
+    async def write_register(self, address: int, value: int) -> bool:
+        """
+        Write single holding register (FC=06) on PAC3220
+
+        Args:
+            address: Zero-based register address
+            value: Integer value to write (0/1 for DO)
+        """
+        if not self.client or not self.connected:
+            print("[ERROR] Not connected to Modbus device".encode('ascii', 'replace').decode('ascii'))
+            return False
+        try:
+            response = self.client.write_register(
+                address=address,
+                value=int(value),
+                slave=self.unit_id,
+            )
+            if response and not response.isError():
+                print(f"✅ Register {address} set to {value}")
+                return True
+            else:
+                print(f"[ERROR] Failed to write register {address}".encode('ascii', 'replace').decode('ascii'))
+                return False
+        except (ModbusException, ConnectionException, Exception) as e:
+            print(f"[ERROR] Register write error at {address}: {str(e).encode('ascii', 'replace').decode('ascii')}")
+            return False

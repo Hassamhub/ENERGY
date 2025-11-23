@@ -107,7 +107,7 @@ async def get_reading_history(
     parameter_id: Optional[int] = Query(None, description="Specific parameter ID to filter"),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Get historical readings for a device (KW_Total time series)"""
+    """Get historical readings for a device (KW_Total hourly buckets using ReadingDate + ReadingHour)"""
     try:
         user_role = current_user.get("role", "User")
         user_id = current_user.get("sub")
@@ -124,14 +124,22 @@ async def get_reading_history(
         if user_role != "Admin" and str(device.get("UserID")) != str(user_id):
             raise HTTPException(status_code=403, detail="Access denied")
 
-        # Build query (KW_Total timeseries)
+        # Build hourly buckets using ReadingDate + ReadingHour
         base_query = """
-        SELECT r.ReadingID as DataID, 'KW_Total' as ParameterName, 'kW' as Unit,
-               r.KW_Total as Value, r.Timestamp, r.Quality
+        SELECT TOP 720
+               MIN(r.ReadingID) as DataID,
+               'KW_Total' as ParameterName,
+               'kW' as Unit,
+               AVG(CAST(r.KW_Total AS FLOAT)) as Value,
+               MIN(r.Timestamp) as FirstTs,
+               MAX(r.Timestamp) as LastTs,
+               r.ReadingDate,
+               r.ReadingHour
         FROM app.Readings r
         WHERE r.AnalyzerID = ?
           AND r.Timestamp >= DATEADD(HOUR, -?, GETUTCDATE())
-        ORDER BY r.Timestamp DESC
+        GROUP BY r.ReadingDate, r.ReadingHour
+        ORDER BY r.ReadingDate DESC, r.ReadingHour DESC
         """
 
         readings = db_helper.execute_query(base_query, (device_id, hours))

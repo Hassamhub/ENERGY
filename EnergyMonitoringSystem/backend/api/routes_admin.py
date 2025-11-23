@@ -544,3 +544,50 @@ async def mark_event_read(event_id: int, current_user: Dict = Depends(get_curren
         raise HTTPException(status_code=500, detail="Failed to mark event as read")
 
 # Legacy coil enqueue removed
+@router.post("/do-control")
+async def admin_do_control(request: AdminDOEnqueueRequest, current_user: Dict = Depends(get_current_user)):
+    try:
+        if current_user.get("role") != "Admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+        cmd = (request.command or "").upper()
+        if cmd not in ["ON", "OFF", "TOGGLE"]:
+            raise HTTPException(status_code=400, detail="Invalid command. Must be ON, OFF, or TOGGLE")
+
+        if not (0 <= int(request.coil_address) <= 9999):
+            raise HTTPException(status_code=400, detail="Invalid coil address")
+
+        params = {
+            "@AnalyzerID": int(request.analyzer_id),
+            "@CoilAddress": int(request.coil_address),
+            "@Command": cmd,
+            "@RequestedBy": current_user.get("sub"),
+            "@MaxRetries": 3,
+            "@Notes": f"source=manual;{request.notes or ''}"
+        }
+        result = db_helper.execute_stored_procedure("app.sp_ControlDigitalOutput", params)
+        if not result:
+            result = [{
+                "CommandID": None,
+                "AnalyzerID": params["@AnalyzerID"],
+                "CoilAddress": params["@CoilAddress"],
+                "Command": params["@Command"],
+                "RequestedBy": params["@RequestedBy"],
+                "MaxRetries": params["@MaxRetries"],
+            }]
+
+        try:
+            db_helper.execute_stored_procedure("ops.sp_LogAuditEvent", {
+                "@ActorUserID": current_user.get("sub"),
+                "@Action": "AdminDOManual",
+                "@Details": f"Manual DO {cmd} for analyzer {request.analyzer_id} coil {request.coil_address}"
+            })
+        except Exception:
+            pass
+
+        return {"success": True, "command": result[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Admin DO control error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to control digital output")
