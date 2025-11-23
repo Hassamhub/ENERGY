@@ -1,0 +1,201 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # Python Backend Testing
+  python-backend:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        cd EnergyMonitoringSystem
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Lint Python code
+      run: |
+        cd EnergyMonitoringSystem
+        pip install flake8 black isort
+        flake8 backend/ scripts/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 backend/ scripts/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        black --check backend/ scripts/
+        isort --check-only backend/ scripts/
+
+    - name: Test Python backend
+      run: |
+        cd EnergyMonitoringSystem
+        pip install pytest pytest-cov
+        pytest backend/tests/ -v --cov=backend --cov-report=xml
+
+    - name: Validate register map
+      run: |
+        cd EnergyMonitoringSystem
+        python -c "
+        import json, sys
+        with open('config/register_map.json') as f:
+            config = json.load(f)
+        required_fields = ['type', 'address', 'scale', 'description']
+        errors = []
+        for param, spec in config.items():
+            missing = [f for f in required_fields if f not in spec]
+            if missing:
+                errors.append(f'{param}: missing {missing}')
+        if errors:
+            print('Register map validation errors:')
+            for e in errors: print(f'  {e}')
+            sys.exit(1)
+        print(f'✅ Register map valid: {len(config)} parameters')
+        "
+
+  # .NET API Testing
+  dotnet-api:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: |
+        cd EnergyMonitoringSystem/EnergyMonitoringAPI
+        dotnet restore
+
+    - name: Build
+      run: |
+        cd EnergyMonitoringSystem/EnergyMonitoringAPI
+        dotnet build --no-restore --configuration Release
+
+    - name: Test
+      run: |
+        cd EnergyMonitoringSystem/EnergyMonitoringAPI
+        dotnet test --no-build --configuration Release --verbosity normal
+
+    - name: Lint C# code
+      run: |
+        cd EnergyMonitoringSystem
+        dotnet tool install -g dotnet-format
+        dotnet format --verify-no-changes EnergyMonitoringAPI/
+
+  # React Frontend Testing
+  react-frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: EnergyMonitoringSystem/frontend/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd EnergyMonitoringSystem/frontend
+        npm ci
+
+    - name: Lint and format check
+      run: |
+        cd EnergyMonitoringSystem/frontend
+        npm run lint
+        npm run format:check
+
+    - name: Build
+      run: |
+        cd EnergyMonitoringSystem/frontend
+        npm run build
+
+    - name: Test
+      run: |
+        cd EnergyMonitoringSystem/frontend
+        npm test -- --coverage --watchAll=false
+
+  # Docker Build Test
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build Docker images
+      run: |
+        cd EnergyMonitoringSystem
+        docker build -f Dockerfile.simulator -t pac3220-simulator .
+        docker build -f Dockerfile.poller -t pac3220-poller .
+
+    - name: Validate Docker Compose
+      run: |
+        cd EnergyMonitoringSystem
+        docker-compose config -q
+
+  # Security Scan
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Integration Test (Optional - requires Docker)
+  integration-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run integration tests
+      run: |
+        cd EnergyMonitoringSystem
+        # Start Docker environment
+        docker-compose up -d
+        sleep 60  # Wait for services to be ready
+
+        # Run integration tests
+        docker-compose exec -T poller python -c "
+        import time
+        from backend.poller_service import REGISTER_MAP
+        print('✅ Integration test: Services started successfully')
+        print(f'📊 Register map loaded: {len(REGISTER_MAP)} parameters')
+
+        # Test database connection
+        try:
+            import pyodbc
+            conn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=mssql;DATABASE=PAC3220DB;UID=sa;PWD=YourStrong!Passw0rd')
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM dbo.Readings')
+            count = cursor.fetchone()[0]
+            print(f'✅ Database connection successful, readings: {count}')
+            conn.close()
+        except Exception as e:
+            print(f'❌ Database connection failed: {e}')
+            exit(1)
+        "
+
+        # Cleanup
+        docker-compose down -v

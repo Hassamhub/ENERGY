@@ -1,0 +1,24 @@
+# Node
+node_modules/
+dist/
+build/
+
+# .NET
+**/bin/
+**/obj/
+publish/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

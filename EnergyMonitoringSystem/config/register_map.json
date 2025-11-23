@@ -1,0 +1,127 @@
+{
+  "voltage_l1": {
+    "type": "input_register",
+    "address": 7,
+    "scale": 1.0,
+    "description": "Voltage L1-N (V) - float"
+  },
+  "voltage_l2": {
+    "type": "input_register",
+    "address": 9,
+    "scale": 1.0,
+    "description": "Voltage L2-N (V) - float"
+  },
+  "voltage_l3": {
+    "type": "input_register",
+    "address": 11,
+    "scale": 1.0,
+    "description": "Voltage L3-N (V) - float"
+  },
+  "current_l1": {
+    "type": "input_register",
+    "address": 13,
+    "scale": 1.0,
+    "description": "Ampere L1 (A) - float"
+  },
+  "current_l2": {
+    "type": "input_register",
+    "address": 15,
+    "scale": 1.0,
+    "description": "Ampere L2 (A) - float"
+  },
+  "current_l3": {
+    "type": "input_register",
+    "address": 17,
+    "scale": 1.0,
+    "description": "Ampere L3 (A) - float"
+  },
+  "frequency": {
+    "type": "input_register",
+    "address": 55,
+    "scale": 1.0,
+    "description": "Frequency (Hz) - float"
+  },
+  "pf_total": {
+    "type": "input_register",
+    "address": 69,
+    "scale": 1.0,
+    "description": "Power Factor - float"
+  },
+  "power_kw_l1": {
+    "type": "input_register",
+    "address": 61,
+    "scale": 1.0,
+    "description": "KW L1 (kW) - float"
+  },
+  "power_kw_l2": {
+    "type": "input_register",
+    "address": 63,
+    "scale": 1.0,
+    "description": "KW L2 (kW) - float"
+  },
+  "power_kw_total": {
+    "type": "input_register",
+    "address": 65,
+    "scale": 1.0,
+    "description": "Total Active Power (kW) - float"
+  },
+  "power_kw_l3": {
+    "type": "input_register",
+    "address": 67,
+    "scale": 1.0,
+    "description": "KW L3 (kW) - float"
+  },
+  "energy_kwh_grid": {
+    "type": "input_register",
+    "address": 801,
+    "scale": 1.0,
+    "description": "Total active energy import tariff 1 (kWh) - double"
+  },
+  "energy_kwh_generator": {
+    "type": "input_register",
+    "address": 805,
+    "scale": 1.0,
+    "description": "Total active energy import tariff 2 (kWh) - double"
+  },
+  "energy_export_tariff1": {
+    "type": "input_register",
+    "address": 809,
+    "scale": 1.0,
+    "description": "Total active energy export tariff 1 (kWh) - double"
+  },
+  "energy_export_tariff2": {
+    "type": "input_register",
+    "address": 813,
+    "scale": 1.0,
+    "description": "Total active energy export tariff 2 (kWh) - double"
+  },
+  "current_total": {
+    "type": "input_register",
+    "address": 19,
+    "scale": 1.0,
+    "description": "Current Total (A) - float"
+  },
+  "pf_l1": {
+    "type": "input_register",
+    "address": 71,
+    "scale": 1.0,
+    "description": "Power factor L1 - float"
+  },
+  "pf_l2": {
+    "type": "input_register",
+    "address": 73,
+    "scale": 1.0,
+    "description": "Power factor L2 - float"
+  },
+  "pf_l3": {
+    "type": "input_register",
+    "address": 75,
+    "scale": 1.0,
+    "description": "Power factor L3 - float"
+  },
+  "coil_do_control": {
+    "type": "coil",
+    "address": 0,
+    "description": "Digital Output for breaker control"
+  }
+}

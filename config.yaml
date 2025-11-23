@@ -1,0 +1,85 @@
+database:
+  driver: "ODBC Driver 17 for SQL Server"
+  server: "localhost"
+  database: "PAC3220"
+  timeout_seconds: 5
+modbus:
+  timeout_seconds: 2
+  retries: 3
+  poll_interval_seconds: 1
+  max_concurrency: 200
+  endian: "big"
+  port: 502
+  scan_jitter_ms: 200
+scheduler:
+  refresh_devices_seconds: 30
+  shard_count: 8
+logging:
+  level: "INFO"
+  file: "logs/poller.log"
+registers:
+  - name: ITotal
+    address: 61
+    count: 2
+    dtype: float32
+    column: ITotal
+  - name: KW_Total
+    address: 65
+    count: 2
+    dtype: float32
+    column: KW_Total
+  - name: VL1
+    address: 7
+    count: 2
+    dtype: float32
+    column: VL1
+  - name: VL2
+    address: 9
+    count: 2
+    dtype: float32
+    column: VL2
+  - name: VL3
+    address: 11
+    count: 2
+    dtype: float32
+    column: VL3
+  - name: IL1
+    address: 13
+    count: 2
+    dtype: float32
+    column: IL1
+  - name: IL2
+    address: 15
+    count: 2
+    dtype: float32
+    column: IL2
+  - name: IL3
+    address: 17
+    count: 2
+    dtype: float32
+    column: IL3
+  - name: Hz
+    address: 55
+    count: 2
+    dtype: float32
+    column: Hz
+  - name: PF_Avg
+    address: 69
+    count: 2
+    dtype: float32
+    column: PF_Avg
+  - name: KWh_Total
+    address: 801
+    count: 4
+    dtype: float64
+    column: KWh_Total
+  - name: KWh_Grid
+    address: 805
+    count: 4
+    dtype: float64
+    column: KWh_Grid
+  - name: KWh_Generator
+    address: 809
+    count: 4
+    dtype: float64
+    column: KWh_Generator
