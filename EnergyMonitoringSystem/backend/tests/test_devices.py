@@ -1,10 +1,13 @@
 import pytest
 from fastapi.testclient import TestClient
-import os
+import os, sys
 
 os.environ.setdefault("JWT_SECRET", "test_secret")
 os.environ.setdefault("JWT_REFRESH_SECRET", "test_secret_refresh")
 
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, repo_root)
+sys.path.insert(0, os.path.join(repo_root, "backend"))
 from backend.main import app
 
 class DummyDB:

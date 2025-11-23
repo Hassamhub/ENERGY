@@ -399,10 +399,10 @@ async def get_device_status(device_id: int, current_user: Dict = Depends(get_cur
         readings = db_helper.execute_query(readings_query, (device_id,))
         reading_count = readings[0]["ReadingCount"] if readings else 0
 
-        # Determine last_seen based on latest DeviceHistory entry (Kepware ingestion)
+        # Determine last_seen based on latest reading from Kepware ingestion
         hist_rows = db_helper.execute_query(
             """
-            SELECT TOP 1 Timestamp FROM app.DeviceHistory WHERE AnalyzerID = ? ORDER BY Timestamp DESC
+            SELECT TOP 1 Timestamp FROM app.Readings WHERE AnalyzerID = ? ORDER BY Timestamp DESC
             """,
             (device_id,)
         )
